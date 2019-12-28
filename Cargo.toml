@@ -6,7 +6,7 @@ edition = "2018"
 description = "RFM9x LoRa/FSK transceiver driver for Raspberry Pi in native Rust"
 license = "MIT"
 categories = ["embedded", "hardware-support"]
-keywords = ["iot","raspberry", "rpi", "pi", "lora", "lorawan"]
+keywords = ["iot","raspberry", "pi", "lora", "lorawan"]
 repository = "https://git.pixelspark.nl/pixelspark/rfm9x"
 
 [dependencies]
