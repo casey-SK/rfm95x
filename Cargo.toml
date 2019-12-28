@@ -3,8 +3,11 @@ name = "rfm9x"
 version = "0.1.0"
 authors = ["Tommy van der Vorst <tommy@pixelspark.nl>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "RFM9x LoRa/FSK transceiver driver for Raspberry Pi in native Rust"
+license = "MIT"
+categories = ["embedded"]
+keywords = ["iot","raspberry", "rpi", "pi"]
+repository = "https://git.pixelspark.nl/pixelspark/rfm9x"
 
 [dependencies]
 bitflags = "1.2.1"
