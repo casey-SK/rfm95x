@@ -347,13 +347,14 @@ impl RFM95 {
 	 * - RX1 uses the data rate of the uplink, unless an offset has been configured (see LoRAWAN regional spec. 2.2.7)
 	 * - RX2 again is fixed and configurable; the default is SF12, 125 kHz.
 	 */
-	fn receive_packet_after_transmit(&mut self) -> Result<(), Box<dyn Error>> {
+	pub fn receive_packet(&mut self, channel: Channel, data_rate: DataRate, with_crc: bool, timeout: Duration) -> Result<(), Box<dyn Error>> {
 		self.set_mode(Mode::LORA | Mode::STANDBY)?;
 
 		// Put receiver in receive mode
 		self.set_mode(Mode::LORA | Mode::RECEIVE_CONTINUOUS)?;
-		self.set_frequency(self.channel)?;
-		self.set_data_rate(self.data_rate, false)?;
+		self.set_frequency(channel)?;
+		self.set_data_rate(data_rate, with_crc)?;
+		self.write_register(Register::PayloadLength, 0u8)?;
 
 		// Set IRQ pin to become high when a message has been received (RxDone)
 		self.write_register(Register::DIOMapping1, 0x00)?;
@@ -361,24 +362,16 @@ impl RFM95 {
 		println!("Before RX: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
 
 		// Wait for the interrupt pin to become high
-		self.wait_for_interrupt(Duration::from_millis(1000))?;
-		println!("RX1: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
-
-		// RX2 phase
-		self.set_mode(Mode::LORA | Mode::STANDBY)?;
-		self.set_frequency(Channel::Ch9)?;
-		self.set_data_rate(DataRate::SF12_BW125, false)?;
-		self.write_register(Register::DIOMapping1, 0x00)?;
-		self.set_mode(Mode::LORA | Mode::RECEIVE_CONTINUOUS)?;
-
-		// Wait for the interrupt pin to become high
-		println!("Awaiting packet RX2");
-		self.wait_for_interrupt(Duration::from_millis(1000))?;
-		println!("RX2: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
+		self.wait_for_interrupt(timeout)?;
+		println!("RX: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
 
 		// Put transceiver to sleep again
 		self.set_mode(Mode::LORA | Mode::STANDBY)?;
 		Ok(())
+	}
+
+	pub fn receive_packet_on_tx(&mut self, with_crc: bool, timeout: Duration) -> Result<(), Box<dyn Error>> {
+		self.receive_packet(self.channel, self.data_rate, with_crc, timeout)
 	}
 
 	fn set_frequency(&mut self, channel: Channel) -> Result<(), Box<dyn Error>> {
@@ -403,7 +396,7 @@ impl RFM95 {
 		Ok(())
 	}
 
-	pub fn send_packet(&mut self, packet: &[u8], keep_listening: bool) -> Result<(), Box<dyn Error>> {
+	pub fn send_packet(&mut self, packet: &[u8]) -> Result<(), Box<dyn Error>> {
 		assert!(packet.len() > 0);
 		assert!(packet.len() < 255);
 
@@ -436,10 +429,6 @@ impl RFM95 {
 		// Wait for the interrupt pin to become high
 		if !self.wait_for_interrupt(Duration::from_millis(1000))? {
 			return Err(Box::new(RFMError::TransmissionTimedOut));
-		}
-
-		if keep_listening {
-			self.receive_packet_after_transmit()?;
 		}
 
 		// Put transceiver to standby again
