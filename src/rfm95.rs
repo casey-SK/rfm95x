@@ -238,7 +238,7 @@ impl RFM95 {
 		if old_mode == Some(mode) {
 			return Ok(());
 		}
-		println!("Set mode {:?} => {:?}", old_mode, mode);
+		// println!("Set mode {:?} => {:?}", old_mode, mode);
 		self.write_register(Register::OpMode, mode.bits)?;
 		thread::sleep(Duration::from_millis(10));
 
@@ -327,7 +327,6 @@ impl RFM95 {
 	fn wait_for_interrupt(&mut self, timeout: Duration) -> Result<bool, Box<dyn Error>> {
 		self.write_register(Register::IRQFlags, 0xFF)?; // Clear IRQ flags
 		assert_eq!(self.irq_pin.is_high(), false);
-		println!("Awaiting interrupt for {}ms dio1_mapping={:8b} dio2_mapping={:8b}", timeout.as_millis(), self.read_register(Register::DIOMapping1)?, self.read_register(Register::DIOMapping2)?);
 		let result = match self.irq_pin.poll_interrupt(true, Some(timeout))? {
 			Some(Level::Low) => false, // Should not happen?
 			Some(Level::High) => true,
@@ -353,27 +352,29 @@ impl RFM95 {
 
 		// Put receiver in receive mode
 		self.set_mode(Mode::LORA | Mode::RECEIVE_CONTINUOUS)?;
+		self.set_frequency(self.channel)?;
+		self.set_data_rate(self.data_rate, false)?;
 
 		// Set IRQ pin to become high when a message has been received (RxDone)
 		self.write_register(Register::DIOMapping1, 0x00)?;
 
-		println!("Before RX: {} bytes, {} pkts, {} headers", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?);
+		println!("Before RX: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
 
 		// Wait for the interrupt pin to become high
-		self.wait_for_interrupt(Duration::from_millis(1500))?;
-		println!("RX1: {} bytes, {} pkts, {} headers", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?);
+		self.wait_for_interrupt(Duration::from_millis(1000))?;
+		println!("RX1: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
 
 		// RX2 phase
 		self.set_mode(Mode::LORA | Mode::STANDBY)?;
 		self.set_frequency(Channel::Ch9)?;
-		self.set_data_rate(DataRate::SF12_BW125)?;
+		self.set_data_rate(DataRate::SF12_BW125, false)?;
 		self.write_register(Register::DIOMapping1, 0x00)?;
 		self.set_mode(Mode::LORA | Mode::RECEIVE_CONTINUOUS)?;
 
 		// Wait for the interrupt pin to become high
 		println!("Awaiting packet RX2");
-		self.wait_for_interrupt(Duration::from_millis(1500))?;
-		println!("RX2: {} bytes, {} pkts, {} headers", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?);
+		self.wait_for_interrupt(Duration::from_millis(1000))?;
+		println!("RX2: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
 
 		// Put transceiver to sleep again
 		self.set_mode(Mode::LORA | Mode::STANDBY)?;
@@ -389,8 +390,14 @@ impl RFM95 {
 		Ok(())
 	}
 
-	fn set_data_rate(&mut self, data_rate: DataRate) -> Result<(), Box<dyn Error>> {
-		self.write_register(Register::ModemConfig2, data_rate.modem_config_2().bits)?;
+	fn set_data_rate(&mut self, data_rate: DataRate, enable_crc: bool) -> Result<(), Box<dyn Error>> {
+		let mut modem_config_2 = data_rate.modem_config_2();
+
+		if enable_crc {
+			modem_config_2 |= ModemConfig2Flags::RX_PAYLOAD_CRC_FOUND;
+		}
+
+		self.write_register(Register::ModemConfig2, modem_config_2.bits)?;
 		self.write_register(Register::ModemConfig1, data_rate.modem_config_1().bits)?;
 		self.write_register(Register::ModemConfig3, data_rate.modem_config_3().bits)?;
 		Ok(())
@@ -409,7 +416,7 @@ impl RFM95 {
 		self.set_frequency(self.channel)?;
 
 		// Set data rate
-		self.set_data_rate(self.data_rate)?;
+		self.set_data_rate(self.data_rate, true)?;
 
 		// Set payload length
 		self.write_register(Register::PayloadLength, packet.len() as u8)?;
@@ -503,7 +510,7 @@ impl DataRate {
 	}
 
 	fn modem_config_2(&self) -> ModemConfig2Flags {
-		let sf = match self {
+		match self {
 			DataRate::SF7_BW125 => ModemConfig2Flags::SF7,
 			DataRate::SF7_BW250 => ModemConfig2Flags::SF7,
 			DataRate::SF8_BW125 => ModemConfig2Flags::SF8,
@@ -511,9 +518,7 @@ impl DataRate {
 			DataRate::SF10_BW125 => ModemConfig2Flags::SF10,
 			DataRate::SF11_BW125 => ModemConfig2Flags::SF11,
 			DataRate::SF12_BW125 => ModemConfig2Flags::SF12,
-		};
-
-		sf | ModemConfig2Flags::RX_PAYLOAD_CRC_FOUND
+		}
 	}
 
 	fn modem_config_3(&self) -> ModemConfig3Flags {
