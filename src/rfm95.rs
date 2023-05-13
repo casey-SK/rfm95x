@@ -349,7 +349,7 @@ impl RFM95 {
 	 * - RX1 uses the data rate of the uplink, unless an offset has been configured (see LoRAWAN regional spec. 2.2.7)
 	 * - RX2 again is fixed and configurable; the default is SF12, 125 kHz.
 	 */
-	pub fn receive_packet(&mut self, channel: Channel, data_rate: DataRate, with_crc: bool, timeout: Duration) -> Result<(), Box<dyn Error>> {
+	pub fn receive_packet(&mut self, channel: Channel, data_rate: DataRate, with_crc: bool, timeout: Duration) -> Result<[u8; 255], Box<dyn Error>> {
 		let mut buffer = [0 as u8; 255];
 		
 		self.set_mode(Mode::LORA | Mode::STANDBY)?;
