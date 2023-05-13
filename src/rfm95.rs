@@ -350,6 +350,8 @@ impl RFM95 {
 	 * - RX2 again is fixed and configurable; the default is SF12, 125 kHz.
 	 */
 	pub fn receive_packet(&mut self, channel: Channel, data_rate: DataRate, with_crc: bool, timeout: Duration) -> Result<(), Box<dyn Error>> {
+		let mut buffer = [0 as u8; 255];
+		
 		self.set_mode(Mode::LORA | Mode::STANDBY)?;
 
 		// Put receiver in receive mode
@@ -362,14 +364,20 @@ impl RFM95 {
 		self.write_register(Register::DIOMapping1, 0x00)?;
 
 		println!("Before RX: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
-
+		let fifo_addr = self.read_register(Register::FIFORXCurrent);
+		self.write_register(Register::RegFifoAddrPtr.addr(), fifo_addr)?;
+        for i in 0..size {
+            let byte = self.read_register(Register::RegFifo.addr())?;
+            buffer[i as usize] = byte;
+        }
+        self.write_register(Register::RegFifoAddrPtr.addr(), 0)?;
 		// Wait for the interrupt pin to become high
 		self.wait_for_interrupt(timeout)?;
 		println!("RX: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
 
 		// Put transceiver to sleep again
 		self.set_mode(Mode::LORA | Mode::STANDBY)?;
-		Ok(())
+		Ok(buffer)
 	}
 
 	pub fn receive_packet_on_tx(&mut self, with_crc: bool, timeout: Duration) -> Result<(), Box<dyn Error>> {
