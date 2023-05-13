@@ -14,6 +14,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 		Channel::Ch3,
 	)?;
 	rfm.reset(25)?;
-	rfm.send_packet("Hello world!".as_bytes(), false)?; // Raw packet
+	rfm.send_packet("Hello world!".as_bytes())?; // Raw packet
 	Ok(())
 }
