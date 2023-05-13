@@ -6,6 +6,8 @@ use std::fmt::Display;
 use std::thread;
 use std::time::Duration;
 
+// comment
+
 #[allow(dead_code)]
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
