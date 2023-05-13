@@ -334,7 +334,7 @@ impl RFM95 {
 		};
 
 		let irq_flags = IRQFlags::from_bits(self.read_register(Register::IRQFlags)?);
-		println!("IRQ status: fired {}, pin {}, flags={:?}", result, self.irq_pin.is_high(), irq_flags);
+		// println!("IRQ status: fired {}, pin {}, flags={:?}", result, self.irq_pin.is_high(), irq_flags);
 		Ok(result)
 	}
 
@@ -362,7 +362,7 @@ impl RFM95 {
 		// Set IRQ pin to become high when a message has been received (RxDone)
 		self.write_register(Register::DIOMapping1, 0x00)?;
 
-		println!("Before RX: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
+		//println!("Before RX: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
 
 		// Wait for the interrupt pin to become high
 		self.wait_for_interrupt(timeout)?;
@@ -391,7 +391,7 @@ impl RFM95 {
 		self.write_register(Register::FRFMSB, frequency[0])?;
 		self.write_register(Register::FRFMID, frequency[1])?;
 		self.write_register(Register::FRFLSB, frequency[2])?;
-		println!("Frequency set to {:?} {:02x?}", channel, frequency);
+		//println!("Frequency set to {:?} {:02x?}", channel, frequency);
 		Ok(())
 	}
 
