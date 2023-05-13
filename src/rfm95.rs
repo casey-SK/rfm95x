@@ -366,7 +366,7 @@ impl RFM95 {
 
 		// Wait for the interrupt pin to become high
 		self.wait_for_interrupt(timeout)?;
-		println!("RX: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
+		//println!("RX: {} bytes, {} pkts, {} headers, last RSSI={}", self.read_register(Register::ReceiveNumberOfBytes)?, self.read_register(Register::ReceiveValidPacketCountLSB)?, self.read_register(Register::ReceiveValidHeaderCountLSB)?, self.read_register(Register::LastRSSIValue)?);
 		let size = self.read_register(Register::ReceiveNumberOfBytes)?;
 		let fifo_addr = self.read_register(Register::FIFORXCurrent)?;
         self.write_register(Register::FIFOAddressPointer, fifo_addr)?;
