@@ -588,7 +588,7 @@ impl Channel {
 	fn random() -> Channel {
 		let mut rng = rand::thread_rng();
 		// Only use channels 0..=7
-		match rng.gen_range::<u8, u8, u8>(0, 8) {
+		match rng.gen_range(0..=7) {
 			0 => Channel::Ch0,
 			1 => Channel::Ch1,
 			2 => Channel::Ch2,
