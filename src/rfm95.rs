@@ -58,7 +58,9 @@ enum Register {
 	Version = 0x42
 }
 
+
 bitflags! {
+	#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 	struct Mode: u8 {
 		// See p. 102, RegOpMode
 		const SLEEP = 0b000;
@@ -79,6 +81,7 @@ bitflags! {
 }
 
 bitflags! {
+	#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 	struct ModemConfig3Flags: u8 {
 		const IS_MOBILE_NODE = 0b0000_1000;
 		const AUTO_AGC_ON = 0b0000_0100;
@@ -87,6 +90,7 @@ bitflags! {
 
 bitflags! {
 	// See page 106 of data sheet: RegModemConfig1
+	#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 	struct ModemConfig1Flags: u8 {
 		const BW7_8 = 0b0000_0000;
 		const BW10_4 = 0b0001_0000;
@@ -109,6 +113,7 @@ bitflags! {
 }
 
 bitflags! {
+	#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 	struct ModemConfig2Flags: u8 {
 		const SF7 = 0x70;
 		const SF8 = 0x80;
@@ -126,6 +131,7 @@ bitflags! {
 }
 
 bitflags! {
+	#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 	struct IRQFlags: u8 {
 		const CHANNEL_ACTIVITY_DETECTED = 0b0000_0001;
 		const FHSS_CHANGE_CHANNEL = 0b0000_0010;
@@ -239,12 +245,12 @@ impl RFM95 {
 			return Ok(());
 		}
 		// println!("Set mode {:?} => {:?}", old_mode, mode);
-		self.write_register(Register::OpMode, mode.bits)?;
+		self.write_register(Register::OpMode, mode.bits())?;
 		thread::sleep(Duration::from_millis(10));
 
 		// Check the correct mode was set
 		let set_mode_raw = self.read_register(Register::OpMode)?;
-		if set_mode_raw != mode.bits {
+		if set_mode_raw != mode.bits() {
 			return Err(Box::new(RFMError::ModeChangeFailed(ModeChangeFailedErrorInfo {
 				old_mode: old_mode_raw,
 				new_mode: mode,
@@ -402,9 +408,9 @@ impl RFM95 {
 			modem_config_2 |= ModemConfig2Flags::RX_PAYLOAD_CRC_FOUND;
 		}
 
-		self.write_register(Register::ModemConfig2, modem_config_2.bits)?;
-		self.write_register(Register::ModemConfig1, data_rate.modem_config_1().bits)?;
-		self.write_register(Register::ModemConfig3, data_rate.modem_config_3().bits)?;
+		self.write_register(Register::ModemConfig2, modem_config_2.bits())?;
+		self.write_register(Register::ModemConfig1, data_rate.modem_config_1().bits())?;
+		self.write_register(Register::ModemConfig3, data_rate.modem_config_3().bits())?;
 		Ok(())
 	}
 

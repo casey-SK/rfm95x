@@ -10,7 +10,7 @@ keywords = ["iot","raspberry", "pi", "lora", "lorawan"]
 repository = "https://git.pixelspark.nl/pixelspark/rfm9x-rust"
 
 [dependencies]
-bitflags = "1.2.1"
+bitflags = "2.3.1"
 rppal = "0.11.3"
 rand = "0.7.2"
 
