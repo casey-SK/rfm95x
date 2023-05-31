@@ -4,7 +4,7 @@ Rust driver for the RFM9x LoRa/FSK transceiver module. An example of compatible
 hardware is the Adafruit LoRa Radio Bonnet shown below attached to a 
 Raspberry Pi Zero W.
 
-<img src="https://cdn-learn.adafruit.com/assets/assets/000/069/814/original/adafruit_products_4072_iso_demo_2019_01.jpg?1548276760" width="400" />
+<img src="https://cdn.shopify.com/s/files/1/1004/5324/products/4074-05_1024x1024.jpg?v=1571439709" width="400" />
 
 ## Status
 
