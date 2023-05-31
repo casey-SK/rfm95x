@@ -1,15 +1,15 @@
-# RFM9x 
+# RFM9x rust driver crate for linux systems
 
-A Rust driver for the RFM9x LoRa/FSK transceiver module (work in progress).
+Rust driver for the RFM9x LoRa/FSK transceiver module. An example of compatible 
+hardware is the Adafruit LoRa Radio Bonnet shown below attached to a 
+Raspberry Pi Zero W.
 
-Author: Tommy van der Vorst (Pixelspark)
+<img src="https://cdn-learn.adafruit.com/assets/assets/000/069/814/original/adafruit_products_4072_iso_demo_2019_01.jpg?1548276760" width="400" />
 
-## What works
+## Status
 
-Transmission of LoRA frames was successfully tested against The Things Network (needs LoRaWAN logic). Receiving currently
-does not work.
-
-Currently uses the `rppal` library to command the Raspbery Pi SPI bus, so will not work (yet) on other systems.
+Highly experimental, Not recommended for production. Packets can be sent and
+received using this crate, but it is not optimized and many bugs still exist.
 
 ## Usage
 
@@ -18,4 +18,5 @@ See [the basic example](./examples/basic.rs).
 ## Copyright & license
 
 Copyright (C) 2019-2020 Tommy van der Vorst, Pixelspark. Released under the  [MIT license](./LICENSE).
+Copyright (C) 2023 Casey McMahon
 
