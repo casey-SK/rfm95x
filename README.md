@@ -13,7 +13,31 @@ received using this crate, but it is not optimized and many bugs still exist.
 
 ## Usage
 
-See [the basic example](./examples/basic.rs).
+Remember to run `rustup target add arm-unknown-linux-gnueabihf`
+
+The examples folder provides barebones usage of crate functions:
+- example: [send](./examples/rpi_tx.rs)
+- example: [receive](./examples/rpi_rx.rs)
+- example: [async tx/rx](./examples/rpi_async_tx_rx.rs) (work-in-progress)
+
+To build the examples in this repo, you can use `cargo build --example <example_name>`
+if you are running the build on a device similar to the one you will be deploying it on.
+
+If you are for example building the binaries on an x86 system and copying them to a 
+Raspberry Pi, you will need to use the [cargo cross crate](https://crates.io/crates/cross)
+and and build using the following command:
+
+```
+cross build --examples --release --target=arm-unknown-linux-gnueabihf
+```
+
+You can then copy the file to your raspberry pi using `scp`:
+
+```
+scp target/arm-unknown-linux-gnueabihf/release/examples/rpi_tx username@zero1.local:~/rpi_tx
+
+scp target/arm-unknown-linux-gnueabihf/release/examples/rpi_rx username@zero2.local:~/rpi_rx
+```
 
 ## Copyright & license
 

@@ -1,0 +1,38 @@
+[tasks.bump]
+install_crate = "cargo-bump"
+command = "cargo"
+args = ["bump"]
+
+[tasks.add-target]
+command = "rustup"
+args = ["target", "add", "arm-unknown-linux-gnueabihf"]
+
+[tasks.build]
+install_crate = "cross"
+command = "cross"
+args = ["build", "--release", "--target=arm-unknown-linux-gnueabihf"]
+dependencies = ["bump", "add-target"]
+
+[tasks.deploy_rpi_tx]
+script_runner = "@shell"
+script = '''
+version=$(cargo get package.version)
+v2=$(echo $version | tr . -)
+scp target/arm-unknown-linux-gnueabihf/release/examples/rpi_tx casey@zero1.local:~/rpi_lora_tx_$v2
+'''
+dependencies = ["build"]
+
+[tasks.deploy_rpi_rx]
+script_runner = "@shell"
+script = '''
+version=$(cargo get package.version)
+v2=$(echo $version | tr . -)
+scp target/arm-unknown-linux-gnueabihf/release/examples/rpi_rx casey@zero2.local:~/rpi_lora_rx_$v2
+'''
+dependencies = ["build"]
+
+[tasks.deploy]
+# should have passwordless ssh setup prior to running
+# https://linuxize.com/post/how-to-setup-passwordless-ssh-login/
+dependencies = ["deploy_rpi_tx", "deploy_rpi_rx"]
+
