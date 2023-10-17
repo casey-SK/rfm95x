@@ -42,5 +42,6 @@ scp target/arm-unknown-linux-gnueabihf/release/examples/rpi_rx username@zero2.lo
 ## Copyright & license
 
 Copyright (C) 2019-2020 Tommy van der Vorst, Pixelspark. Released under the  [MIT license](./LICENSE).
+
 Copyright (C) 2023 Casey McMahon
 
