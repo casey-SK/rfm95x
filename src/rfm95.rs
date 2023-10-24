@@ -361,7 +361,7 @@ impl RFM95 {
         data_rate: DataRate,
         with_crc: bool,
         timeout: Duration,
-    ) -> Result<[u8; 255], Box<dyn Error>> {
+    ) -> Result<([u8; 255], u8), Box<dyn Error>> {
         //println!("debug 1");
 
         let mut buffer = [0 as u8; 255];
@@ -397,14 +397,14 @@ impl RFM95 {
 
         // Put transceiver to sleep again
         self.set_mode(Mode::LORA | Mode::STANDBY)?;
-        Ok(buffer)
+        Ok((buffer, size))
     }
 
     pub fn receive_packet_on_tx(
         &mut self,
         with_crc: bool,
         timeout: Duration,
-    ) -> Result<[u8; 255], Box<dyn Error>> {
+    ) -> Result<([u8; 255], u8), Box<dyn Error>> {
         self.receive_packet(self.channel, self.data_rate, with_crc, timeout)
     }
 
@@ -480,6 +480,10 @@ impl RFM95 {
 
     pub fn get_version(&mut self) -> Result<u8, Box<dyn Error>> {
         self.read_register(Register::Version)
+    }
+
+    pub fn get_RSSI(&mut self) -> Result<u8, Box<dyn Error>> {
+        self.read_register(Register::RSSIValue)
     }
 }
 

@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     loop {
         //println!("debug 000");
-        let pkt = rfm.receive_packet(
+        let (pkt, size) = rfm.receive_packet(
             Channel::Ch3,
             DataRate::SF7_BW125,
             false,

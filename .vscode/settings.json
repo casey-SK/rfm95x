@@ -1,0 +1,11 @@
+{
+    "rust-analyzer.cargoRunner": "cross-rust-analyzer",
+    "cross-rust-analyzer.target": "arm-unknown-linux-gnueabihf",
+    "rust-analyzer.check.overrideCommand": [
+        "cross", "check", "--target=arm-unknown-linux-gnueabihf", "--message-format=json", "--examples"
+    ],
+    "rust-analyzer.cargo.buildScripts.overrideCommand": [
+        "cross", "build", "--release","--target=arm-unknown-linux-gnueabihf", "--message-format=json", "--examples"
+    ],
+    "rust-analyzer.checkOnSave": true
+}

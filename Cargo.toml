@@ -1,6 +1,6 @@
 [package]
 name = "rfm9x"
-version = "0.1.22"
+version = "0.1.43"
 authors = ["Tommy van der Vorst <tommy@pixelspark.nl>"]
 edition = "2018"
 description = "RFM9x LoRa/FSK transceiver driver for Raspberry Pi in native Rust"
@@ -16,6 +16,9 @@ default-target = "arm-unknown-linux-musleabi"
 bitflags = "2.4.1"
 rppal = ">=0.14.1"
 rand = "0.8.5"
+
+[dev-dependencies]
+clap = { version = "4.4.6", features = ["derive"] }
 
 [build-dependencies]
 cargo-make = "0.37.2"
