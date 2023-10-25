@@ -7,5 +7,7 @@
     "rust-analyzer.cargo.buildScripts.overrideCommand": [
         "cross", "build", "--release","--target=arm-unknown-linux-gnueabihf", "--message-format=json", "--examples"
     ],
-    "rust-analyzer.checkOnSave": true
+    "rust-analyzer.checkOnSave": true,
+    "rust-analyzer.procMacro.attributes.enable": false,
+    "rust-analyzer.procMacro.enable": false
 }

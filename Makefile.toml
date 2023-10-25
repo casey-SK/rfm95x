@@ -21,7 +21,7 @@ script_runner = "@shell"
 script = '''
 version=$(cargo get package.version)
 v2=$(echo $version | tr . -)
-scp target/arm-unknown-linux-gnueabihf/release/examples/rpi_tx casey@zero1.local:~/rpi_lora_tx_$v2
+scp target/arm-unknown-linux-gnueabihf/release/examples/pingpong casey@zero1.local:~/rfm95x/pingpong_v$v2
 '''
 dependencies = ["build"]
 
@@ -31,7 +31,7 @@ script_runner = "@shell"
 script = '''
 version=$(cargo get package.version)
 v2=$(echo $version | tr . -)
-scp target/arm-unknown-linux-gnueabihf/release/examples/rpi_rx casey@zero2.local:~/rpi_lora_rx_$v2
+scp target/arm-unknown-linux-gnueabihf/release/examples/pingpong casey@zero2.local:~/rfm95x/pingpong_v$v2
 '''
 dependencies = ["build"]
 
