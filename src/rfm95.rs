@@ -341,7 +341,7 @@ impl RFM95 {
             None => false,
         };
 
-        let irq_flags = IRQFlags::from_bits_truncate(self.read_register(Register::IRQFlags)?);
+        // let irq_flags = IRQFlags::from_bits_truncate(self.read_register(Register::IRQFlags)?);
         // println!("IRQ status: fired {}, pin {}, flags={:?}", result, self.irq_pin.is_high(), irq_flags);
         Ok(result)
     }
@@ -482,8 +482,12 @@ impl RFM95 {
         self.read_register(Register::Version)
     }
 
-    pub fn get_RSSI(&mut self) -> Result<u8, Box<dyn Error>> {
+    pub fn get_rssi(&mut self) -> Result<u8, Box<dyn Error>> {
         self.read_register(Register::RSSIValue)
+    }
+
+    pub fn get_snr(&mut self) -> Result<u8, Box<dyn Error>> {
+        self.read_register(Register::LastSNRValue)
     }
 }
 
