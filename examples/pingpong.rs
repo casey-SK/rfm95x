@@ -3,6 +3,22 @@ use std::{error::Error, thread::sleep};
 use std::time::{Duration, Instant};
 use chrono::prelude::*;
 
+// use std::{thread, time};
+
+use ssd1306::{prelude::*, I2CDisplayInterface, Ssd1306};
+use ssd1306::mode::BufferedGraphicsMode;
+use embedded_graphics::mono_font::MonoTextStyle;
+
+use embedded_graphics::{
+    mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
+    pixelcolor::BinaryColor,
+    prelude::*,
+    text::{Baseline, Text},
+};
+
+use linux_embedded_hal::I2cdev;
+
+
 use rfm9x::{Band, Channel, DataRate, RFM95};
 use rppal::spi::{Bus, Mode, SlaveSelect, Spi};
 
@@ -78,8 +94,8 @@ fn setup_radio() -> Result<RFM95, Box<dyn Error>> {
 
 fn send_it(rfm: &mut RFM95, m: &str) -> Result<(), Box<dyn Error>> {
 
-    let msg = format!("TX: [{}] - {}", Utc::now().to_string(), m);
-    println!("{}", msg);
+    let msg = format!("{} {}", Utc::now().round_subsecs(2).time().to_string(), m);
+    println!("TX: {}", msg);
     rfm.send_packet(msg.as_bytes()).unwrap();
     Ok(())
 }
@@ -95,7 +111,36 @@ fn get_it(rfm: &mut RFM95, timeout: u64) -> Result<String, Box<dyn Error>> {
     let msg = String::from_utf8_lossy(&pkt);
     let msg2 = msg.strip_suffix(0 as char).unwrap();
 
-    return Ok(format!("RX: [{}] [RSSI: {}] [SNR: {}]- {}", Utc::now().to_string(), rfm.get_rssi().unwrap(),rfm.get_rssi().unwrap(), msg2));
+    return Ok(msg2.to_string());
+}
+
+fn print_rx_oled(msg: String) {
+
+    let (t1, b1) = msg.split_at(12);
+    let t2 = t1.trim_matches(char::from(0)).trim();
+    let b2 = b1.trim_matches(char::from(0)).trim();
+    let i2c = I2cdev::new("/dev/i2c-1").unwrap();
+    
+    let interface = I2CDisplayInterface::new(i2c);
+    
+    let mut display = Ssd1306::new(interface, DisplaySize128x32, DisplayRotation::Rotate0)
+        .into_buffered_graphics_mode();
+    display.init().unwrap();
+    
+    let text_style = MonoTextStyleBuilder::new()
+        .font(&FONT_6X10)
+        .text_color(BinaryColor::On)
+        .build();
+
+    Text::with_baseline(t2, Point::zero(), text_style, Baseline::Top)
+        .draw(&mut display)
+        .unwrap();
+
+    Text::with_baseline(b2, Point::new(0, 16), text_style, Baseline::Top)
+        .draw(&mut display)
+        .unwrap();
+
+    display.flush().unwrap();
 }
 
 fn ping(count: u8, delay: u64, timeout: u64) -> Result<(), Box<dyn Error>> {
@@ -114,7 +159,7 @@ fn ping(count: u8, delay: u64, timeout: u64) -> Result<(), Box<dyn Error>> {
             println!("\nTIMEOUT\n");
             break;
         }
-        println!("{}", m);
+        println!("RX: [{}] [RSSI: {}] [SNR: {}]- {}", Utc::now().round_subsecs(2).time().to_string(), rfm.get_rssi().unwrap(),rfm.get_rssi().unwrap(), m);
         sleep(Duration::from_secs(delay));
         send_it(&mut rfm, "PING")?;
         now = Instant::now();
@@ -124,9 +169,15 @@ fn ping(count: u8, delay: u64, timeout: u64) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+
+
 fn pong(timeout: u64) -> Result<(), Box<dyn Error>> {
     
     let mut rfm = setup_radio()?;
+
+    let oled_print = "hello, world".to_string();
+    print_rx_oled(oled_print);
+
 
     let mut now = Instant::now();
     loop {
@@ -135,7 +186,8 @@ fn pong(timeout: u64) -> Result<(), Box<dyn Error>> {
             println!("\nTIMEOUT\n");
             break;
         }
-        println!("{}", m);
+        println!("RX: [{}] [RSSI: {}] [SNR: {}]- {}", Utc::now().round_subsecs(2).time().to_string(), rfm.get_rssi().unwrap(),rfm.get_rssi().unwrap(), m);
+        print_rx_oled(m);
         send_it(&mut rfm, "PONG")?;
         now = Instant::now();
     }
@@ -156,6 +208,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             pong(args.timeout)?;
         }
     }
+
+    
 
     Ok(())
 }
