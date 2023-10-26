@@ -1,0 +1,18 @@
+version: 25
+jobs:
+- name: Push
+  steps:
+  - !PushRepository
+    name: Push
+    remoteUrl: https://github.com/casey-SK/rfm95x
+    userName: casey-sk
+    passwordSecret: access-token
+    force: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  triggers:
+  - !BranchUpdateTrigger {}
+  - !TagCreateTrigger {}
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 3600
