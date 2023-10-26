@@ -15,28 +15,28 @@ command = "cross"
 args = ["build", "--release", "--target=arm-unknown-linux-gnueabihf", "--examples"]
 dependencies = ["bump", "add-target"]
 
-[tasks.deploy_rpi_tx]
+[tasks.deploy_rpi_1]
 install_crate = "cargo-get"
 script_runner = "@shell"
 script = '''
 version=$(cargo get package.version)
 v2=$(echo $version | tr . -)
-scp target/arm-unknown-linux-gnueabihf/release/examples/pingpong casey@zero1.local:~/rfm95x/pingpong_v$v2
+scp target/arm-unknown-linux-gnueabihf/release/examples/pingpong casey@zero1.local:~/rfm95x/pingpong
 '''
 dependencies = ["build"]
 
-[tasks.deploy_rpi_rx]
+[tasks.deploy_rpi_2]
 install_crate = "cargo-get"
 script_runner = "@shell"
 script = '''
 version=$(cargo get package.version)
 v2=$(echo $version | tr . -)
-scp target/arm-unknown-linux-gnueabihf/release/examples/pingpong casey@zero2.local:~/rfm95x/pingpong_v$v2
+scp target/arm-unknown-linux-gnueabihf/release/examples/pingpong casey@zero2.local:~/rfm95x/pingpong
 '''
 dependencies = ["build"]
 
 [tasks.deploy]
 # should have passwordless ssh setup prior to running
 # https://linuxize.com/post/how-to-setup-passwordless-ssh-login/
-dependencies = ["deploy_rpi_tx", "deploy_rpi_rx"]
+dependencies = ["deploy_rpi_1", "deploy_rpi_2"]
 

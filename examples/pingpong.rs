@@ -6,8 +6,6 @@ use chrono::prelude::*;
 // use std::{thread, time};
 
 use ssd1306::{prelude::*, I2CDisplayInterface, Ssd1306};
-use ssd1306::mode::BufferedGraphicsMode;
-use embedded_graphics::mono_font::MonoTextStyle;
 
 use embedded_graphics::{
     mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
@@ -45,7 +43,7 @@ struct PingArgs {
     count: u8,
 
     /// the time in seconds between pings. If set to zero, it will only ping when a pong has been recieved (except the first one).
-    #[arg(short, long, default_value_t = 0)]
+    #[arg(short, long, default_value_t = 10)]
     delay: u64,
 
     /// The amount of time the program will listen for a ping. Resets after each recieved ping.
@@ -72,7 +70,7 @@ fn setup_radio() -> Result<RFM95, Box<dyn Error>> {
         spi,
         22,
         Some(7),
-        DataRate::SF7_BW125,
+        DataRate::SF12_BW125,
         Band::US901,
         Channel::Ch3,
     )
@@ -83,10 +81,10 @@ fn setup_radio() -> Result<RFM95, Box<dyn Error>> {
     // recieve a packet (unused, not sure why but it needs to happen.)
     let (_pkt, _size) = rfm.receive_packet(
         Channel::Ch3,
-        DataRate::SF7_BW125,
+        DataRate::SF12_BW125,
         false,
         Duration::from_secs(1),
-    ).unwrap();
+    )?;
     
     return Ok(rfm);
 }
@@ -96,29 +94,35 @@ fn send_it(rfm: &mut RFM95, m: &str) -> Result<(), Box<dyn Error>> {
 
     let msg = format!("{} {}", Utc::now().round_subsecs(2).time().to_string(), m);
     println!("TX: {}", msg);
-    rfm.send_packet(msg.as_bytes()).unwrap();
+    rfm.send_packet(msg.as_bytes())?;
     Ok(())
 }
 
 fn get_it(rfm: &mut RFM95, timeout: u64) -> Result<String, Box<dyn Error>> {
+
+    let mut t:u64 = 120;
+
+    if timeout ==0 { 
+        t = 120;
+    } else {
+        t = timeout;
+    }
+
     let (pkt, _size) = rfm.receive_packet(
         Channel::Ch3,
-        DataRate::SF7_BW125,
+        DataRate::SF12_BW125,
         false,
-        Duration::from_secs(timeout + 1),
-    ).unwrap();
+        Duration::from_secs(t + 1),
+    )?;
 
     let msg = String::from_utf8_lossy(&pkt);
-    let msg2 = msg.strip_suffix(0 as char).unwrap();
+    let msg2 = msg.strip_suffix(0 as char).unwrap().to_string();
 
-    return Ok(msg2.to_string());
+    return Ok(msg2);
 }
 
-fn print_rx_oled(msg: String) {
+fn print_rx_oled(line1: String, line2: String) {
 
-    let (t1, b1) = msg.split_at(12);
-    let t2 = t1.trim_matches(char::from(0)).trim();
-    let b2 = b1.trim_matches(char::from(0)).trim();
     let i2c = I2cdev::new("/dev/i2c-1").unwrap();
     
     let interface = I2CDisplayInterface::new(i2c);
@@ -132,11 +136,11 @@ fn print_rx_oled(msg: String) {
         .text_color(BinaryColor::On)
         .build();
 
-    Text::with_baseline(t2, Point::zero(), text_style, Baseline::Top)
+    Text::with_baseline(&line1, Point::zero(), text_style, Baseline::Top)
         .draw(&mut display)
         .unwrap();
 
-    Text::with_baseline(b2, Point::new(0, 16), text_style, Baseline::Top)
+    Text::with_baseline(&line2, Point::new(0, 16), text_style, Baseline::Top)
         .draw(&mut display)
         .unwrap();
 
@@ -145,26 +149,39 @@ fn print_rx_oled(msg: String) {
 
 fn ping(count: u8, delay: u64, timeout: u64) -> Result<(), Box<dyn Error>> {
     
+    let oled_print_l1 = "PING".to_string();
+    let oled_print_l2 = "ABOUT TO TX".to_string();
+    print_rx_oled(oled_print_l1, oled_print_l2);
+
     // setup radio
-    let mut rfm = setup_radio().unwrap();
-
-    // send first packet
-    send_it(&mut rfm, "PING")?;
-
+    let mut rfm = setup_radio()?;
     let mut counter: u8 = 1;
+    // send first packet
+    let mut fm = format!("{}/{} - PING", counter, count);
+    send_it(&mut rfm, &fm)?;
+
+    
     let mut now = Instant::now();
     while counter < count {
-        let m = get_it(&mut rfm, timeout)?;
-        if now.elapsed().as_secs() >= timeout.into() {
+        let m = get_it(&mut rfm, delay)?;
+        if (now.elapsed().as_secs() >= timeout.into() && timeout !=0) {
             println!("\nTIMEOUT\n");
+            let oled_print_l1 = "PING - TIMEOUT".to_string();
+            print_rx_oled(oled_print_l1, "".to_string());
             break;
         }
         println!("RX: [{}] [RSSI: {}] [SNR: {}]- {}", Utc::now().round_subsecs(2).time().to_string(), rfm.get_rssi().unwrap(),rfm.get_rssi().unwrap(), m);
         sleep(Duration::from_secs(delay));
-        send_it(&mut rfm, "PING")?;
-        now = Instant::now();
         counter += 1;
+        fm = format!("{}/{} - PING", counter, count);
+        print_rx_oled(fm.clone(), "".to_string());
+        send_it(&mut rfm, &fm)?;
+        now = Instant::now();
+        
     }
+
+    let oled_print_l1 = "PING - DONE".to_string();
+    print_rx_oled(oled_print_l1, "".to_string());
 
     Ok(())
 }
@@ -175,19 +192,25 @@ fn pong(timeout: u64) -> Result<(), Box<dyn Error>> {
     
     let mut rfm = setup_radio()?;
 
-    let oled_print = "hello, world".to_string();
-    print_rx_oled(oled_print);
+    let oled_print_l1 = "PONG".to_string();
+    let oled_print_l2 = "WAITING FOR RX".to_string();
+    print_rx_oled(oled_print_l1, oled_print_l2);
 
 
     let mut now = Instant::now();
     loop {
         let m = get_it(&mut rfm, timeout)?;
-        if now.elapsed().as_secs() >= timeout.into() {
+        if now.elapsed().as_secs() >= timeout.into() && timeout !=0{
             println!("\nTIMEOUT\n");
+            let oled_print_l1 = "PONG - TIMEOUT".to_string();
+            print_rx_oled(oled_print_l1, "".to_string());
             break;
         }
         println!("RX: [{}] [RSSI: {}] [SNR: {}]- {}", Utc::now().round_subsecs(2).time().to_string(), rfm.get_rssi().unwrap(),rfm.get_rssi().unwrap(), m);
-        print_rx_oled(m);
+        let (t1, b1) = m.split_at(12);
+        let t2 = t1.trim_matches(char::from(0)).trim().to_string();
+        let b2 = b1.trim_matches(char::from(0)).trim().to_string();
+        print_rx_oled(t2, b2);
         send_it(&mut rfm, "PONG")?;
         now = Instant::now();
     }
@@ -208,8 +231,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             pong(args.timeout)?;
         }
     }
-
-    
 
     Ok(())
 }
